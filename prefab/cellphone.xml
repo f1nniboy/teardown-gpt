@@ -1,0 +1,9 @@
+<prefab version="1.2.0">
+	<group name="instance=MOD/prefab/cellphone.xml" pos="-7.1 1.4 -4.4" rot="0.0 0.0 0.0">
+		<body pos="0.0 -0.0 -0.0" dynamic="false">
+			<vox collide="false" file="MOD/vox/cellphone.vox" scale="0.5">
+				<screen tags="noidlecursor nocam" pos="0.025 0.275 -0.01" rot="0.0 0.0 0.0" size="0.15 0.15" bulge="0" resolution="640 640" script="MOD/screen.lua" enabled="true" interactive="true" emissive="0.5" fxraster="0"/>
+			</vox>
+		</body>
+	</group>
+</prefab>

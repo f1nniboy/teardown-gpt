@@ -1,0 +1,148 @@
+--- Additional API functions, to be used by the AI
+
+function GetAllVehicles()
+	return FindVehicles(nil, true)
+end
+
+function GetAllBodies()
+	return FindBodies(nil, true)
+end
+
+function GetAllShapes()
+	return FindShapes(nil, true)
+end
+
+function GetAllJoints()
+	return FindJoints(nil, true)
+end
+
+function GetAllLights()
+	return FindLights(nil, true)
+end
+
+function SetVehicleTransform(vehicle, transform)
+	SetBodyTransform(GetVehicleBody(vehicle), transform)
+end
+
+function Notification(text)
+	SetString("hud.notification", text)
+end
+
+function ChangeWeather(type)
+	SetEnvironmentDefault()
+	SetPostProcessingDefault()
+
+	if type == "sunset" then
+		SetEnvironmentProperty("skybox", "sunset.dds")
+		SetEnvironmentProperty("skyboxtint", 1, 0.5, 0.2)
+		SetEnvironmentProperty("fogColor", 0.3, 0.2, 0.08)
+		SetEnvironmentProperty("fogParams", 80, 200, 1, 6)
+		SetEnvironmentProperty("sunBrightness", 1)
+		SetEnvironmentProperty("sunColorTint", 0.2, 0.3, 1)
+		SetEnvironmentProperty("sunFogScale", 1.0)
+		SetEnvironmentProperty("sunGlare", 0.8)
+		SetEnvironmentProperty("exposure", 1, 5)
+		SetEnvironmentProperty("nightlight", false)
+	elseif type == "sunny" then
+		SetEnvironmentProperty("skybox", "day.dds")
+		SetEnvironmentProperty("skyboxbrightness", 0.7)
+		SetEnvironmentProperty("fogColor", 0.9, 0.9, 0.9)
+		SetEnvironmentProperty("fogParams", 50, 200, 0.9, 8)
+		SetEnvironmentProperty("sunBrightness", 4)
+		SetEnvironmentProperty("sunColorTint", 1, 0.8, 0.6)
+		SetEnvironmentProperty("exposure",1, 5)
+		SetEnvironmentProperty("sunFogScale",0.15)
+		SetEnvironmentProperty("nightlight", false)
+	elseif type == "night" then
+		SetEnvironmentProperty("skybox", "cloudy.dds")
+		SetEnvironmentProperty("skyboxbrightness", 0.05)
+		SetEnvironmentProperty("fogColor", 0.02, 0.02, 0.024)
+		SetEnvironmentProperty("fogParams", 20, 120, 0.9, 2)
+		SetEnvironmentProperty("exposure", 1, 5)
+		SetEnvironmentProperty("ambience", "outdoor/night.ogg")
+		SetEnvironmentProperty("nightlight", true)
+		SetPostProcessingProperty("gamma", 0.9)
+		SetPostProcessingProperty("bloom", 1.5)
+	elseif type == "sunrise" then
+		SetEnvironmentProperty("skybox", "cloudy.dds")
+		SetEnvironmentProperty("skyboxtint", 1, 0.4, 0.2)
+		SetEnvironmentProperty("skyboxbrightness", 0.6)
+		SetEnvironmentProperty("fogColor", 1, 0.2, 0.1)
+		SetEnvironmentProperty("fogParams", 30, 160, 0.95, 6)
+		SetEnvironmentProperty("exposure", 1, 5)
+		SetEnvironmentProperty("nightlight", true)
+	elseif type == "foggy" then
+		SetEnvironmentProperty("skybox", "cloudy.dds")
+		SetEnvironmentProperty("skyboxtint", 1.0, 0.6, 0.4)
+		SetEnvironmentProperty("fogColor", 0.2, 0.18, 0.15)
+		SetEnvironmentProperty("fogParams", 0, 60, 0.9, 3)
+		SetEnvironmentProperty("exposure", 1, 5)
+		SetEnvironmentProperty("wetness", 0.4)
+		SetEnvironmentProperty("puddleamount", 0.3)
+		SetEnvironmentProperty("nightlight", false)
+		SetEnvironmentProperty("slippery", 0.1)
+	elseif type == "rain" then
+		SetEnvironmentProperty("skybox", "cloudy.dds")
+		SetEnvironmentProperty("skyboxtint", 1.0, 0.6, 0.4)
+		SetEnvironmentProperty("fogColor", 0.1, 0.1, 0.1)
+		SetEnvironmentProperty("fogParams", 0, 70, 0.9, 1)
+		SetEnvironmentProperty("exposure", 1, 5)
+		SetEnvironmentProperty("wetness", 0.5)
+		SetEnvironmentProperty("puddleamount", 0.5)
+		SetEnvironmentProperty("puddlesize", 0.7)
+		SetEnvironmentProperty("rain", 0.5)
+		SetEnvironmentProperty("ambience", "outdoor/rain_light.ogg")
+		SetEnvironmentProperty("nightlight", false)
+		SetEnvironmentProperty("slippery", 0.2)
+	elseif type == "rainynight" then
+		SetEnvironmentProperty("skybox", "cloudy.dds")
+		SetEnvironmentProperty("skyboxbrightness", 0.02)
+		SetEnvironmentProperty("fogColor", 0.02, 0.02, 0.024)
+		SetEnvironmentProperty("fogParams", 10, 90, 0.9, 2)
+		SetEnvironmentProperty("exposure", 1, 5)
+		SetEnvironmentProperty("wetness", 0.7)
+		SetEnvironmentProperty("puddleamount", 0.7)
+		SetEnvironmentProperty("puddlesize", 0.7)
+		SetEnvironmentProperty("rain", 0.9)
+		SetEnvironmentProperty("ambience", "outdoor/rain_heavy.ogg")
+		SetEnvironmentProperty("nightlight", true)
+		SetEnvironmentProperty("slippery", 0.3)
+		SetPostProcessingProperty("gamma", 0.9)
+		SetPostProcessingProperty("bloom", 1.5)
+	elseif type == "snowy" then
+		SetEnvironmentProperty("skybox", "cool_day.dds")
+		SetEnvironmentProperty("skyboxtint", 0.7, 0.7, 1.0)
+		SetEnvironmentProperty("skyboxbrightness", 0.4)
+		SetEnvironmentProperty("ambient", 1.0)
+		SetEnvironmentProperty("fogColor", 0.35, 0.45, 0.6)
+		SetEnvironmentProperty("fogParams", 10, 200, 1.0, 1.5)
+		SetEnvironmentProperty("ambience", "outdoor/winter.ogg")
+		SetEnvironmentProperty("sunbrightness", 3.14)
+		SetEnvironmentProperty("suncolortint", 1, 0.85, 0.75)
+		SetEnvironmentProperty("sunfogscale", 0.25)
+		SetEnvironmentProperty("sunglare", 0.35)
+		SetEnvironmentProperty("nightlight", false)
+		SetEnvironmentProperty("slippery", 0.3)
+		SetEnvironmentProperty("snowamount", 0.2)
+		SetEnvironmentProperty("snowdir", 0.2, -1, 0.2, 0.2)
+		SetPostProcessingProperty("saturation", 0.7)
+		SetPostProcessingProperty("colorbalance", 0.7, 0.8, 1.0)
+	elseif type == "snowynight" then
+		SetEnvironmentProperty("skybox", "cold_wispy_sky.dds")
+		SetEnvironmentProperty("skyboxbrightness", 0.035)
+		SetEnvironmentProperty("fogColor", 0.005, 0.0055, 0.006)
+		SetEnvironmentProperty("fogParams", 1, 125, 0.9, 0.5)
+		SetEnvironmentProperty("constant", 0.002, 0.002, 0.002)
+		SetEnvironmentProperty("ambient", 1.0)
+		SetEnvironmentProperty("fogscale", 1.5)
+		SetEnvironmentProperty("ambience", "outdoor/winter.ogg")
+		SetEnvironmentProperty("nightlight", true)
+		SetEnvironmentProperty("slippery", 0.3)
+		SetEnvironmentProperty("snowamount", 0.2)
+		SetEnvironmentProperty("snowdir", 0.2, -1, 0.2, 0.2)
+		SetPostProcessingProperty("saturation", 0.7)
+		SetPostProcessingProperty("colorbalance", 0.7, 0.8, 1.0)
+		SetPostProcessingProperty("gamma", 0.85)
+		SetPostProcessingProperty("bloom", 1.5)
+	end
+end

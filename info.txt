@@ -1,0 +1,3 @@
+name = TearGPT
+author = f1
+description = Give ChatGPT & GPT-4 full access to your Teardown world.
