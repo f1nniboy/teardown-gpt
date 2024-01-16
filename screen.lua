@@ -3,19 +3,18 @@
 #include "api.lua"
 ]]--
 
----@class notif
----@field scale number
----@field time number
----@field text string|nil
-notif = {
-	scale = 0,
-	time = 0,
-	text = nil
-}
-
 ---@class error
 ---@field message string|nil
 error = nil
+
+---@class history
+---@field open boolean
+---Which request is open, nil if player is in overview
+---@field key string|nil
+history = {
+	open = false,
+	request = nil
+}
 
 function drawButton(width, height, label, alpha)
 	alpha = alpha or 1
@@ -26,27 +25,16 @@ function drawButton(width, height, label, alpha)
 	return UiTextButton(label, width, height)
 end
 
-function notify(text)
-	SetValueInTable(notif, "scale", 1, "cosine", 0.2)
-	UiSound("MOD/snd/vibrate-short.ogg")
-
-	notif.text = text
-	notif.time = 0
-end
-
 function init()
 	buffer = ""
 end
 
 function draw(dt)
 	local interactive = GetPlayerScreen() ~= 0
-	local canGenerate = #buffer > 0
-
 	local state = GetResponseState()
-	local padding = 40
 
-	if notif.scale == 1 and notif.time > 5 then SetValueInTable(notif, "scale", 0, "cosine", 0.2) end
-	if notif.scale > 0 then notif.time = notif.time + dt end
+	local hasHistory = #ListKeys(REGISTRY_PATH .. ".history") > 0
+	local canGenerate = #buffer > 0
 
 	-- Parsing the temporary Lua file parsed
 	if state.status == "fail" then
@@ -70,8 +58,115 @@ function draw(dt)
 	UiFont("font/pixeloid.ttf", 48)
 	UiAlign("middle center")
 
+	-- History
+	if history.open and not history.key then
+		UiPush()
+			local size = 520
+
+			UiTranslate(UiCenter(), UiMiddle())
+			UiImageBox("ui/common/box-outline-6.png", size + 30, size, 12, 12)
+
+			-- Title
+			UiPush()
+				UiTranslate(0, -size / 2)
+				UiColor(0, 0, 0)
+				UiRect(220, 48)
+				UiColor(1, 1, 1)
+				UiText("HISTORY")
+			UiPop()
+
+			-- Entries
+			UiPush()
+				UiAlign("left middle")
+				UiButtonImageBox("ui/common/box-solid-6.png", 6, 6, 1, 1, 1, 1)
+				UiColor(0, 0, 0)
+				UiFont("font/pixeloid.ttf", 38)
+
+				local length = #ListKeys(REGISTRY_PATH .. ".history")
+				local maxLength = 6
+
+				for i = math.max(1, length - maxLength), length do
+					local path = REGISTRY_PATH .. ".history." .. i .. "."
+					local prompt = GetString(path .. "prompt")
+
+					if #prompt > 25 then
+						prompt = prompt:sub(0, 25) .. "..."
+					end
+
+					UiPush()
+						UiTranslate(-size / 2, -size / 2 + 18 + 60 * (i - length + maxLength + 1))
+						UiFont("font/pixeloid.ttf", 26)
+
+						-- View code
+						if UiTextButton(prompt, size, 50) then
+							UiSound("MOD/snd/button-beep.ogg")
+							history.key = tostring(i)
+						end
+					UiPop()
+				end
+			UiPop()
+
+			-- Back button
+			UiPush()
+				UiTranslate(0, size / 2)
+				UiColor(0, 0, 0)
+				UiRect(215, 48)
+				UiColor(1, 1, 1)
+
+				UiFont("font/pixeloid.ttf", 38)
+
+				if drawButton(190, 50, "Back") then
+					UiSound("MOD/snd/button-beep.ogg")
+					history.open = false
+				end
+			UiPop()
+		UiPop()
+
+	elseif history.open and history.key then
+		UiPush()
+			local path = REGISTRY_PATH .. ".history." .. history.key .. "."
+			local size = 520
+
+			UiTranslate(UiCenter(), UiMiddle())
+			UiImageBox("ui/common/box-outline-6.png", size + 30, size, 12, 12)
+
+			-- Title
+			UiPush()
+				UiTranslate(0, -size / 2)
+				UiColor(0, 0, 0)
+				UiRect(170, 48)
+				UiColor(1, 1, 1)
+				UiText("CODE")
+			UiPop()
+
+			-- Code
+			UiPush()
+				UiFont("font/pixeloid.ttf", 26)
+				UiAlign("left top")
+				UiTranslate(-size / 2 + 23, -size / 2 + 28)
+				UiWordWrap(size - 45)
+				UiText(GetString(path .. "code"))
+			UiPop()
+
+			-- Back button
+			UiPush()
+				UiTranslate(0, size / 2)
+				UiColor(0, 0, 0)
+				UiRect(215, 48)
+				UiColor(1, 1, 1)
+
+				UiFont("font/pixeloid.ttf", 38)
+
+				if drawButton(190, 50, "Back") then
+					UiSound("MOD/snd/button-beep.ogg")
+					history.key = nil
+				end
+			UiPop()
+		UiPop()
+	end
+
 	-- Input UI
-	if error == nil then
+	if error == nil and not history.open then
 		if state.status == "idle" then
 			local size = 520
 
@@ -105,7 +200,6 @@ function draw(dt)
 						UiTranslate(-width / 2, 0)
 					end
 
-
 					local textWidth, textHeight = UiText(display)
 
 					textHeight = math.max(60, textHeight)
@@ -132,17 +226,38 @@ function draw(dt)
 				UiTranslate(0, size / 2)
 
 				UiColor(0, 0, 0)
-				UiRect(350, 48)
+				UiRect(440, 48)
 				UiColor(1, 1, 1)
 
 				if not canGenerate then
 					UiDisableInput()
 				end
 
+				UiAlign("left middle")
+				UiTranslate(-size / 2 + 50)
+
 				if drawButton(300, 70, "Generate", canGenerate and 1 or 0.5) or InputPressed("return") then
 					UiSound("MOD/snd/button-beep.ogg")
 					GenerateResponse({ content = buffer })
 				end
+			UiPop()
+
+			-- History button
+			UiPush()
+				UiAlign("right middle")
+				UiTranslate(size / 2 - 50, size / 2)
+
+				UiButtonImageBox("ui/common/box-solid-6.png", 6, 6, 1, 1, 1, hasHistory and 1 or 0.5)
+				if not hasHistory then UiDisableInput() end
+
+				if UiTextButton("", 70, 70) then
+					UiSound("MOD/snd/button-beep.ogg")
+					history.open = true
+				end
+
+				UiTranslate(-35)
+				UiAlign("center middle")
+				UiImage("MOD/img/history.png")
 			UiPop()
 
 		-- Loading screen
@@ -153,9 +268,10 @@ function draw(dt)
 				UiImage("MOD/img/circle.png")
 			UiPop()
 		end
+	end
 
 	-- Error message
-	else
+	if error ~= nil then
 		UiPush()
 			local size = 510
 
@@ -194,22 +310,6 @@ function draw(dt)
 					error = nil
 				end
 			UiPop()
-		UiPop()
-	end
-
-	-- Notification
-	if notif.scale > 0 then
-		UiPush()
-			local scale = math.max(0, math.min(1, 1 - (notif.time / 0.5)))
-			local width = UiGetTextSize(notif.text)
-
-			UiTranslate(UiCenter() + math.sin(notif.time * 500) * scale * 10, -30 + (30 + padding * 1.5) * notif.scale)
-
-			UiColorFilter(1, 1, 1)
-			UiImageBox("ui/common/box-solid-6.png", width + 10 * 2, 60, 6, 6)
-
-			UiColor(0, 0, 0)
-			UiText(notif.text)
 		UiPop()
 	end
 

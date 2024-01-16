@@ -14,6 +14,7 @@ interface OpenAIState {
 	status: "idle" | "busy" | "done" | "fail";
 	error?: string;
 	func?: string;
+	prompt?: string;
 }
 
 interface OpenAIRequest {
@@ -25,8 +26,11 @@ interface OpenAIRequest {
 /* Path to the Teardown savegame, so we can check if a request was made */
 const SAVEGAME_PATH = await getSavegamePath();
 
-/* Load the API docs */
 const API_DOCS = `
+vector = table with 3 values, e.g. { 1, 2, 3 }
+quaternion = table with 4 values
+*_handle = integer
+
 Vec(x, y, z): vector
 VecCopy(orginal): vector
 VecLength(vector): number
@@ -201,9 +205,6 @@ SetPaused(state)
 Notification(text)
 `.trim();
 
-/* Name of the mod, which varies whether the mod is local or uploaded on the workshop */
-const MOD_NAME = "local-teargpt";
-
 /* OpenAI client, to make the requests to ChatGPT */
 const client = new OpenAI({
 	apiKey: env.OPENAI_API_KEY
@@ -243,7 +244,7 @@ async function getSavegamePath() {
 
 /** Write to the temporary .lua script, to send information to Teardown. */
 async function writeState(state: OpenAIState) {
-	const data = `return { status = "${state.status}", func = ${state.func ? `function()\n${state.func}\nend` : "nil"}, error = ${state.error ? `[[${state.error}]]` : "nil"} }`;
+	const data = `return { status = "${state.status}", prompt = ${state.prompt ? `"${state.prompt}"` : "nil"}, func = ${state.func ? `function()\n${state.func}\nend` : "nil"}, code = ${state.func ? `[[${state.func}]]` : "nil"}, error = ${state.error ? `[[${state.error}]]` : "nil"} }`;
 	await Deno.writeFile("./_.lua", new TextEncoder().encode(data));
 }
 
@@ -253,8 +254,8 @@ async function getRequestData(): Promise<OpenAIRequest | null> {
 
 	/* Extract only the data for this mod specifically, to save some time */
 	const lines = content.split("\n");
-	const startIndex = lines.findIndex(l => l.includes(`<${MOD_NAME}>`)) + 1;
-	const endIndex = lines.findIndex(l => l.includes(`</${MOD_NAME}>`));
+	const startIndex = lines.findIndex(l => l.includes(`<teargpt>`));
+	const endIndex = lines.findIndex(l => l.includes(`</teargpt>`)) + 1;
 
 	if (startIndex === -1 || endIndex === -1) return null;
 	
@@ -264,9 +265,9 @@ async function getRequestData(): Promise<OpenAIRequest | null> {
 	const parsed = parseXML(part.join("\n")) as any;
 
 	return {
-		content: parsed.request.content["@value"],
-		id: parsed.request.id["@value"].toString(),
-		done: parsed.request.done["@value"]
+		content: parsed.teargpt.request.content["@value"],
+		id: parsed.teargpt.request.id["@value"].toString(),
+		done: parsed.teargpt.request.done["@value"]
 	};
 }
 
@@ -288,7 +289,7 @@ async function executeRequest(data: OpenAIRequest) {
 		messages,
 
 		model: "gpt-3.5-turbo",
-		temperature: 0
+		temperature: 0.4
 	});
 
 	const code = response.choices[0].message.content?.replaceAll("```", "")?.replaceAll("lua", "")?.trim() ?? undefined;
@@ -316,7 +317,7 @@ for await (const event of Deno.watchFs(SAVEGAME_PATH)) {
 			await writeState({ status: "busy" });
 
 			const result = await executeRequest(data);
-			await writeState({ func: result, status: "done" });
+			await writeState({ status: "done", func: result, prompt: data.content });
 
 		} catch (error) {
 			await writeState({ status: "fail", error: error.toString() });
